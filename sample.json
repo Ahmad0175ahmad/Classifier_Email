@@ -1,0 +1,9 @@
+﻿[
+  {
+    "subject": "Test request",
+    "body": "Hello, I need a quote for 10 licenses. Thanks.",
+    "from": "user@example.com",
+    "to": ["sales@example.com"],
+    "date": "2026-02-06T08:00:00Z"
+  }
+]
