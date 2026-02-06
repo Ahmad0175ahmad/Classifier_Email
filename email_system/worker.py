@@ -98,9 +98,20 @@ def main() -> None:
     input_container = _env("INPUT_CONTAINER", "input-email")
     output_container = _env("OUTPUT_CONTAINER", "output-email")
     queue_name = _env("PROCESSING_QUEUE", "processing-queue")
+    endpoint = _env("AZURE_OPENAI_ENDPOINT")
+    deployment = _env("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT")
+    api_key = _env("AZURE_OPENAI_API_KEY")
 
     if not account_name:
         raise RuntimeError("STORAGE_ACCOUNT_NAME is required.")
+    if endpoint:
+        print(f"OpenAI endpoint: {endpoint}")
+    if deployment:
+        print(f"OpenAI embeddings deployment: {deployment}")
+    if api_key:
+        print(f"OpenAI key length: {len(api_key)}")
+    else:
+        print("OpenAI key not set.")
 
     credential = DefaultAzureCredential()
     queue_client = QueueClient(
