@@ -8,3 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Terraform
+.terraform/
+**/.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+
+# Local secrets
+publishProfile.xml
