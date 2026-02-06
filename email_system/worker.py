@@ -48,7 +48,11 @@ def _extract_blob_name(event: Dict[str, Any], input_container: str) -> Optional[
 
 def _download_blob_text(blob_service: BlobServiceClient, container: str, blob_name: str) -> str:
     blob = blob_service.get_blob_client(container=container, blob=blob_name)
-    return blob.download_blob().readall().decode("utf-8")
+    data = blob.download_blob().readall()
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return data.decode("utf-8", errors="replace")
 
 
 def _upload_output(
