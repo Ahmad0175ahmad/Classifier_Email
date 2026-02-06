@@ -7,6 +7,7 @@ import tempfile
 import time
 from typing import Any, Dict, Optional
 
+from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient, BlobServiceClient, ContentSettings
 from azure.storage.queue import QueueClient
@@ -48,11 +49,20 @@ def _extract_blob_name(event: Dict[str, Any], input_container: str) -> Optional[
 
 def _download_blob_text(blob_service: BlobServiceClient, container: str, blob_name: str) -> str:
     blob = blob_service.get_blob_client(container=container, blob=blob_name)
-    data = blob.download_blob().readall()
-    try:
-        return data.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        return data.decode("utf-8", errors="replace")
+    last_error: Exception | None = None
+    for _ in range(3):
+        try:
+            data = blob.download_blob().readall()
+            try:
+                return data.decode("utf-8-sig")
+            except UnicodeDecodeError:
+                return data.decode("utf-8", errors="replace")
+        except ResourceNotFoundError as exc:
+            last_error = exc
+            time.sleep(2)
+    if last_error:
+        raise last_error
+    raise ResourceNotFoundError("Blob not found.")
 
 
 def _upload_output(
@@ -142,6 +152,9 @@ def main() -> None:
                     print(f"Processed -> {output_name}")
                 else:
                     print("Processed message with no blob.")
+            except ResourceNotFoundError:
+                queue_client.delete_message(msg)
+                print("Blob not found; skipping message.")
             except Exception as exc:
                 print(f"Worker error: {exc}")
         if not found:
