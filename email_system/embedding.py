@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Iterable, List
 
 import numpy as np
-from openai import AzureOpenAI
+import requests
 
 
 class Embedder:
@@ -20,22 +20,22 @@ class AzureOpenAIEmbedder(Embedder):
     deployment: str
     api_version: str = "2024-02-15-preview"
 
-    def _client(self) -> AzureOpenAI:
-        return AzureOpenAI(
-            api_key=self.api_key,
-            azure_endpoint=self.endpoint,
-            api_version=self.api_version,
-        )
-
     def embed(self, texts: Iterable[str]) -> np.ndarray:
-        client = self._client()
+        url = (
+            f"{self.endpoint.rstrip('/')}/openai/deployments/"
+            f"{self.deployment}/embeddings?api-version={self.api_version}"
+        )
         vectors: List[List[float]] = []
         for text in texts:
-            response = client.embeddings.create(
-                model=self.deployment,
-                input=text,
+            response = requests.post(
+                url,
+                headers={"api-key": self.api_key},
+                json={"input": text},
+                timeout=30,
             )
-            vectors.append(response.data[0].embedding)
+            response.raise_for_status()
+            payload = response.json()
+            vectors.append(payload["data"][0]["embedding"])
         return np.array(vectors, dtype=np.float32)
 
 
