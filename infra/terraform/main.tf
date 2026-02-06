@@ -54,8 +54,12 @@ resource "azurerm_eventgrid_system_topic" "blob_topic" {
   name                = "${local.prefix}-blob-topic"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
-  source_arm_resource_id = azurerm_storage_account.main.id
+  source_resource_id = azurerm_storage_account.main.id
   topic_type          = "Microsoft.Storage.StorageAccounts"
+
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "azurerm_eventgrid_system_topic_event_subscription" "blob_created_to_queue" {
@@ -73,6 +77,12 @@ resource "azurerm_eventgrid_system_topic_event_subscription" "blob_created_to_qu
     storage_account_id = azurerm_storage_account.main.id
     queue_name         = azurerm_storage_queue.processing.name
   }
+}
+
+resource "azurerm_role_assignment" "eventgrid_queue" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Queue Data Contributor"
+  principal_id         = azurerm_eventgrid_system_topic.blob_topic.identity[0].principal_id
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
